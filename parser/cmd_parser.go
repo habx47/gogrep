@@ -20,17 +20,25 @@ func parser() ([]string, bool) {
 	return flag.Args(), ignoreCase
 }
 
-func ReadFiles(fs fs.FS, file_arg string) (string, error) {
+func GetFileContent(fs fs.FS, file_arg string) (string, error) {
 	file, err := fs.Open(file_arg)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", OpenFileErr, err)
 	}
 	defer file.Close()
 
-	data, err := io.ReadAll(file)
+	content, err := ReadFiles(file)
 	if err != nil {
-		return "", fmt.Errorf("%w", ReadFileErr)
+		return "", fmt.Errorf("%w", err)
 	}
 
-	return string(data), nil
+	return string(content), nil
+}
+
+func ReadFiles(r io.Reader) ([]byte, error) {
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ReadFileErr, err)
+	}
+	return content, nil
 }
