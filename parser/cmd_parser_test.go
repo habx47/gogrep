@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+	"testing/iotest"
 
 	"github.com/habx47/gogrep/parser"
 )
@@ -14,7 +15,7 @@ import (
 type StubFailingFS struct{}
 
 func (s StubFailingFS) Open(name string) (fs.File, error) {
-	return nil, errors.New("i always fail on open")
+	return nil, errors.New("this will always fail on open")
 }
 
 func TestGetFileContent(t *testing.T) {
@@ -44,12 +45,29 @@ func TestGetFileContent(t *testing.T) {
 }
 
 func TestReadFiles(t *testing.T) {
-	file_content := strings.NewReader("test content")
+	t.Run("no error on read", func(t *testing.T) {
+		file_content := strings.NewReader("test content")
 
-	got, _ := parser.ReadFiles(file_content)
-	want := []byte("test content")
+		got, _ := parser.ReadFiles(file_content)
+		want := []byte("test content")
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got: %v, want: %v", got, want)
-	}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got: %v, want: %v", got, want)
+		}
+	})
+
+	t.Run("error on read", func(t *testing.T) {
+		simulatedErr := errors.New("this will always fail on read")
+		file_content_err := iotest.ErrReader(simulatedErr)
+
+		_, err := parser.ReadFiles(file_content_err)
+
+		if err == nil {
+			t.Fatalf("expected an err but got nil")
+		}
+
+		if !errors.Is(err, parser.ReadFileErr) {
+			t.Errorf("got: %v, want: %v", err, parser.ReadFileErr)
+		}
+	})
 }
