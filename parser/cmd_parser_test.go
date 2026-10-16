@@ -20,7 +20,7 @@ func (s StubFailingFS) Open(name string) (fs.File, error) {
 }
 
 func TestGetFileContent(t *testing.T) {
-	t.Run("no error open & read", func(t *testing.T) {
+	t.Run("no error open & read with matches", func(t *testing.T) {
 		var buffer bytes.Buffer
 		fs := fstest.MapFS{
 			"test_one.txt": &fstest.MapFile{Data: []byte("hello from test_one\nhello again!\n")},
@@ -32,7 +32,26 @@ func TestGetFileContent(t *testing.T) {
 		want := "hello from test_one\nhello from test_two\n"
 
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("expected no err but got %v", err)
+		}
+
+		if got != want {
+			t.Errorf("got: %v, want: %v", got, want)
+		}
+	})
+
+	t.Run("no error with no matches", func(t *testing.T) {
+		var buffer bytes.Buffer
+		fs := fstest.MapFS{
+			"test_one.txt": &fstest.MapFile{Data: []byte("hello from test_one\n")},
+		}
+
+		err := parser.GetFileContent(&buffer, fs, []string{"missing", "test_one.txt"})
+		got := buffer.String()
+		want := ""
+
+		if err != nil {
+			t.Fatalf("expected no err but got %v", err)
 		}
 
 		if got != want {
@@ -54,8 +73,12 @@ func TestReadFiles(t *testing.T) {
 	t.Run("no error on read", func(t *testing.T) {
 		file_content := strings.NewReader("test content")
 
-		got, _ := parser.ReadFiles(file_content)
+		got, err := parser.ReadFiles(file_content)
 		want := []byte("test content")
+
+		if err != nil {
+			t.Fatalf("expected no err but got %v", err)
+		}
 
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got: %v, want: %v", got, want)

@@ -56,6 +56,10 @@ func FindMatches(w io.Writer, b []byte, search_term string) error {
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("%q", err)
+	}
+
 	return nil
 }
 
@@ -68,9 +72,9 @@ func GetFileContent(w io.Writer, fs fs.FS, args []string) error {
 		if err != nil {
 			return fmt.Errorf("%w: %v", OpenFileErr, err)
 		}
-		defer file.Close()
 
 		file_content, err := ReadFiles(file)
+		file.Close()
 		if err != nil {
 			return fmt.Errorf("%w", err)
 		}
