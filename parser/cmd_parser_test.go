@@ -24,7 +24,7 @@ func TestGetFileContent(t *testing.T) {
 			"test_one.txt": &fstest.MapFile{Data: []byte("hello from test_one\n")},
 			"test_two.txt": &fstest.MapFile{Data: []byte("hello from test_two\n")},
 		}
-		got, err := parser.GetFileContent(fs, []string{"test_one.txt", "test_two.txt"})
+		got, err := parser.GetFileContent(fs, []string{"test_one.txt", "test_two.txt"}, "")
 		want := "hello from test_one\nhello from test_two\n"
 
 		if err != nil {
@@ -37,7 +37,7 @@ func TestGetFileContent(t *testing.T) {
 	})
 
 	t.Run("error on opening", func(t *testing.T) {
-		_, err := parser.GetFileContent(StubFailingFS{}, []string{"test.txt"})
+		_, err := parser.GetFileContent(StubFailingFS{}, []string{"test.txt"}, "")
 
 		if !errors.Is(err, parser.OpenFileErr) {
 			t.Errorf("got %v, want %v", err, parser.OpenFileErr)
