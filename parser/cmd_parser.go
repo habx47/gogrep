@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -16,23 +17,27 @@ func parser() ([]string, bool) {
 	flag.BoolVar(&ignoreCase, "i", false, "ignore case distinctions")
 
 	flag.Parse()
-
 	return flag.Args(), ignoreCase
 }
 
-func GetFileContent(fs fs.FS, file_arg string) (string, error) {
-	file, err := fs.Open(file_arg)
-	if err != nil {
-		return "", fmt.Errorf("%w: %v", OpenFileErr, err)
-	}
-	defer file.Close()
+func GetFileContent(fs fs.FS, file_args []string) (string, error) {
+	var content bytes.Buffer
 
-	content, err := ReadFiles(file)
-	if err != nil {
-		return "", fmt.Errorf("%w", err)
-	}
+	for _, filename := range file_args {
+		file, err := fs.Open(filename)
+		if err != nil {
+			return "", fmt.Errorf("%w: %v", OpenFileErr, err)
+		}
+		defer file.Close()
 
-	return string(content), nil
+		file_content, err := ReadFiles(file)
+		if err != nil {
+			return "", fmt.Errorf("%w", err)
+		}
+
+		content.Write(file_content)
+	}
+	return content.String(), nil
 }
 
 func ReadFiles(r io.Reader) ([]byte, error) {
