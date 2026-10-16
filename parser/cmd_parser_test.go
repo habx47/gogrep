@@ -100,3 +100,38 @@ func TestReadFiles(t *testing.T) {
 		}
 	})
 }
+
+func TestFindMatches(t *testing.T) {
+	t.Run("valid regexp", func(t *testing.T) {
+		var buffer bytes.Buffer
+		byte := []byte("test string")
+		valid_pattern := "test"
+		err := parser.FindMatches(&buffer, byte, valid_pattern)
+
+		if err != nil {
+			t.Fatalf("expected no err but got %v", err)
+		}
+
+		got := buffer.String()
+		want := "test string\n"
+
+		if got != want {
+			t.Errorf("got: %v want: %v", got, want)
+		}
+	})
+
+	t.Run("invalid regexp", func(t *testing.T) {
+		var buffer bytes.Buffer
+		byte := []byte("test string")
+		invalid_pattern := "(invaid-regex"
+		err := parser.FindMatches(&buffer, byte, invalid_pattern)
+
+		if err == nil {
+			t.Fatalf("expected err on invalid pattern: %v but got nil", invalid_pattern)
+		}
+
+		if !errors.Is(err, parser.RegExpErr) {
+			t.Errorf("got: %v want: %v", err, parser.RegExpErr)
+		}
+	})
+}

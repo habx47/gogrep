@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"strings"
+	"regexp"
 )
 
 var NoArgErr = errors.New("no arguments provided")
@@ -16,6 +16,7 @@ var NoFileArgErr = errors.New("no file arguments provided")
 var OpenFileErr = errors.New("cannot open the file")
 var ReadFileErr = errors.New("cannot read the file")
 var WriteErr = errors.New("failed to write matched line to required output")
+var RegExpErr = errors.New("invaid regex expression pattern")
 
 func Parser() ([]string, bool, error) {
 	var ignoreCase bool
@@ -44,11 +45,15 @@ func ReadFiles(r io.Reader) ([]byte, error) {
 func FindMatches(w io.Writer, b []byte, search_term string) error {
 	r := bytes.NewReader(b)
 	scanner := bufio.NewScanner(r)
+	re, err := regexp.Compile(search_term)
+	if err != nil {
+		return fmt.Errorf("%w: %q", RegExpErr, err)
+	}
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if strings.Contains(line, search_term) {
+		if re.MatchString(line) {
 			_, err := fmt.Fprintln(w, line)
 			if err != nil {
 				return fmt.Errorf("%w: %q", WriteErr, err)
