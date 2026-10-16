@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -9,16 +8,14 @@ import (
 )
 
 func main() {
-	args, _, err := parser.Parser()
-	if err != nil {
-		log.Fatalf("Error: %v\n", err)
+	args, _, parserErr := parser.Parser()
+	if parserErr != nil {
+		log.Fatalf("Error: %v\n", parserErr)
 	}
 
 	fs := os.DirFS(".")
-	file_contents, err := parser.GetFileContent(fs, args[1:], args[0])
+	err := parser.GetFileContent(os.Stdout, fs, args)
 	if err != nil {
 		log.Fatalf("Error: %v\n", err)
 	}
-
-	fmt.Printf("Required content: %v", file_contents)
 }

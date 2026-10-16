@@ -1,18 +1,21 @@
 package parser
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"io/fs"
+	"strings"
 )
 
 var NoArgErr = errors.New("no arguments provided")
 var NoFileArgErr = errors.New("no file arguments provided")
 var OpenFileErr = errors.New("cannot open the file")
 var ReadFileErr = errors.New("cannot read the file")
+var WriteErr = errors.New("failed to write matched line to required output")
 
 func Parser() ([]string, bool, error) {
 	var ignoreCase bool
@@ -30,30 +33,51 @@ func Parser() ([]string, bool, error) {
 	return args, ignoreCase, nil
 }
 
-func GetFileContent(fs fs.FS, file_args []string, search_term string) (string, error) {
-	var content bytes.Buffer
-
-	for _, filename := range file_args {
-		file, err := fs.Open(filename)
-		if err != nil {
-			return "", fmt.Errorf("%w: %v", OpenFileErr, err)
-		}
-		defer file.Close()
-
-		file_content, err := ReadFiles(file)
-		if err != nil {
-			return "", fmt.Errorf("%w", err)
-		}
-
-		content.Write(file_content)
-	}
-	return content.String(), nil
-}
-
 func ReadFiles(r io.Reader) ([]byte, error) {
 	content, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ReadFileErr, err)
 	}
 	return content, nil
+}
+
+func FindMatches(w io.Writer, b []byte, search_term string) error {
+	r := bytes.NewReader(b)
+	scanner := bufio.NewScanner(r)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.Contains(line, search_term) {
+			_, err := fmt.Fprintln(w, line)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func GetFileContent(w io.Writer, fs fs.FS, args []string) error {
+	search_term := args[0]
+	file_args := args[1:]
+
+	for _, filename := range file_args {
+		file, err := fs.Open(filename)
+		if err != nil {
+			return fmt.Errorf("%w: %v", OpenFileErr, err)
+		}
+		defer file.Close()
+
+		file_content, err := ReadFiles(file)
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+
+		matchErr := FindMatches(w, file_content, search_term)
+		if matchErr != nil {
+			return fmt.Errorf("%w: %v", WriteErr, matchErr)
+		}
+	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package parser_test
 
 import (
+	"bytes"
 	"errors"
 	"io/fs"
 	"reflect"
@@ -20,11 +21,14 @@ func (s StubFailingFS) Open(name string) (fs.File, error) {
 
 func TestGetFileContent(t *testing.T) {
 	t.Run("no error open & read", func(t *testing.T) {
+		var buffer bytes.Buffer
 		fs := fstest.MapFS{
-			"test_one.txt": &fstest.MapFile{Data: []byte("hello from test_one\n")},
+			"test_one.txt": &fstest.MapFile{Data: []byte("hello from test_one\nhello again!\n")},
 			"test_two.txt": &fstest.MapFile{Data: []byte("hello from test_two\n")},
 		}
-		got, err := parser.GetFileContent(fs, []string{"test_one.txt", "test_two.txt"}, "")
+		err := parser.GetFileContent(&buffer, fs, []string{"from", "test_one.txt", "test_two.txt"})
+
+		got := buffer.String()
 		want := "hello from test_one\nhello from test_two\n"
 
 		if err != nil {
@@ -37,7 +41,8 @@ func TestGetFileContent(t *testing.T) {
 	})
 
 	t.Run("error on opening", func(t *testing.T) {
-		_, err := parser.GetFileContent(StubFailingFS{}, []string{"test.txt"}, "")
+		var buffer bytes.Buffer
+		err := parser.GetFileContent(&buffer, StubFailingFS{}, []string{"", "test.txt"})
 
 		if !errors.Is(err, parser.OpenFileErr) {
 			t.Errorf("got %v, want %v", err, parser.OpenFileErr)
