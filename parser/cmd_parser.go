@@ -50,7 +50,9 @@ func FindMatches(w io.Writer, b []byte, search_term string) error {
 
 		if strings.Contains(line, search_term) {
 			_, err := fmt.Fprintln(w, line)
-			return err
+			if err != nil {
+				return fmt.Errorf("%w: %q", WriteErr, err)
+			}
 		}
 	}
 
@@ -75,7 +77,7 @@ func GetFileContent(w io.Writer, fs fs.FS, args []string) error {
 
 		matchErr := FindMatches(w, file_content, search_term)
 		if matchErr != nil {
-			return fmt.Errorf("%w: %v", WriteErr, matchErr)
+			return fmt.Errorf("%w", matchErr)
 		}
 	}
 
