@@ -92,7 +92,7 @@ func Buf_ReadFileMatch(w io.Writer, file fs.File, re *regexp.Regexp) error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("%w: %v", ReadFileErr, err)
 	}
 
 	return nil
@@ -130,6 +130,11 @@ func GetFileContent(w io.Writer, fs fs.FS, args []string, ignoreCase bool) error
 
 		matchErr := Buf_ReadFileMatch(w, file, re)
 		file.Close()
+		if !errors.Is(matchErr, ReadFileErr) {
+			fmt.Fprintf(w, "%v: %v\n", ReadFileErr, err)
+			continue
+		}
+
 		if matchErr != nil {
 			return fmt.Errorf("%w", matchErr)
 		}
