@@ -29,7 +29,7 @@ func TestGetFileContent(t *testing.T) {
 		err := parser.GetFileContent(&buffer, fs, []string{"from", "test_one.txt", "test_two.txt"})
 
 		got := buffer.String()
-		want := "hello from test_one\nhello from test_two\n"
+		want := "hello from test_one (test_one.txt)\nhello from test_two (test_two.txt)\n"
 
 		if err != nil {
 			t.Fatalf("expected no err but got %v", err)
