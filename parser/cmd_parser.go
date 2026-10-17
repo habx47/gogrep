@@ -113,7 +113,8 @@ func GetFileContent(w io.Writer, fs fs.FS, args []string, ignoreCase bool) error
 	for _, filename := range file_args {
 		file, err := fs.Open(filename)
 		if err != nil {
-			return fmt.Errorf("%w: %v", OpenFileErr, err)
+			fmt.Fprintf(w, "%v: %v\n", OpenFileErr, err)
+			continue
 		}
 
 		/*	file_content, err := ReadFiles(file)

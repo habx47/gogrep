@@ -122,7 +122,9 @@ func TestGetFileContent(t *testing.T) {
 		var buffer bytes.Buffer
 		err := parser.GetFileContent(&buffer, StubFailingFS{}, []string{"", "test.txt"}, false)
 
-		if !errors.Is(err, parser.OpenFileErr) {
+		got := buffer.String()
+
+		if !strings.Contains(got, parser.OpenFileErr.Error()) {
 			t.Errorf("got %v, want %v", err, parser.OpenFileErr)
 		}
 	})
