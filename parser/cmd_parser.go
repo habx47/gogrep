@@ -69,6 +69,9 @@ func FindMatches(w io.Writer, b []byte, search_term string) error {
 }
 
 func Buf_ReadFileMatch(w io.Writer, file fs.File, re *regexp.Regexp) error {
+	// could implement bufio.NewReader and then Reader.ReadSting("\n")
+	// will have equivalent behaviour while not being limited to buf size
+
 	scanner := bufio.NewScanner(file)
 
 	file_info, err := file.Stat()
@@ -125,6 +128,7 @@ func GetFileContent(w io.Writer, fs fs.FS, args []string, ignoreCase bool) error
 			} */
 
 		matchErr := Buf_ReadFileMatch(w, file, re)
+		file.Close()
 		if matchErr != nil {
 			return fmt.Errorf("%w", matchErr)
 		}
