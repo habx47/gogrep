@@ -3,6 +3,7 @@ package parser_test
 import (
 	"bytes"
 	"errors"
+	"io"
 	"io/fs"
 	"reflect"
 	"strings"
@@ -195,4 +196,36 @@ func TestFindMatches(t *testing.T) {
 			t.Errorf("got: %v want: %v", err, parser.RegExpErr)
 		}
 	})
+}
+
+func BenchmarkGetFileContent(b *testing.B) {
+	benchmarks := []struct {
+		name string
+		size int
+	}{
+		{"1KB", 1024},
+		{"1MB", 1024 * 1024},
+		{"10MB", 10 * 1024 * 1024},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			line := []byte("hello from test file\n")
+			file_content := bytes.Repeat(line, (bm.size/len(line))+1)
+			file_content = file_content[:bm.size]
+
+			fs := fstest.MapFS{
+				"test_file.txt": {Data: file_content},
+			}
+
+			b.ResetTimer()
+
+			for b.Loop() {
+				err := parser.GetFileContent(io.Discard, fs, []string{"test", "test_file.txt"}, false)
+				if err != nil {
+					b.Fatalf("Failed to benchmark: %v", err)
+				}
+			}
+		})
+	}
 }

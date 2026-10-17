@@ -130,14 +130,17 @@ func GetFileContent(w io.Writer, fs fs.FS, args []string, ignoreCase bool) error
 
 		matchErr := Buf_ReadFileMatch(w, file, re)
 		file.Close()
+
+		if matchErr == nil {
+			continue
+		}
+
 		if !errors.Is(matchErr, ReadFileErr) {
 			fmt.Fprintf(w, "%v: %v\n", ReadFileErr, err)
 			continue
 		}
 
-		if matchErr != nil {
-			return fmt.Errorf("%w", matchErr)
-		}
+		return fmt.Errorf("%w", matchErr)
 	}
 
 	return nil
