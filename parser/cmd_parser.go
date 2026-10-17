@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/fs"
 	"regexp"
-	"strings"
 )
 
 var NoArgErr = errors.New("no arguments provided")
@@ -69,15 +68,8 @@ func FindMatches(w io.Writer, b []byte, search_term string) error {
 	return nil
 }
 
-func Buf_ReadFileMatch(w io.Writer, file fs.File, search_term string, ignoreCase bool) error {
-	if ignoreCase {
-		search_term = strings.ToLower(search_term)
-	}
+func Buf_ReadFileMatch(w io.Writer, file fs.File, re *regexp.Regexp) error {
 	scanner := bufio.NewScanner(file)
-	re, err := regexp.Compile(search_term)
-	if err != nil {
-		return fmt.Errorf("%w: %v", RegExpErr, err)
-	}
 
 	file_info, err := file.Stat()
 	if err != nil {
@@ -88,14 +80,7 @@ func Buf_ReadFileMatch(w io.Writer, file fs.File, search_term string, ignoreCase
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		matched := false
-		if ignoreCase {
-			matched = re.MatchString(strings.ToLower(line))
-		} else {
-			matched = re.MatchString(line)
-		}
-
-		if matched {
+		if re.MatchString(line) {
 			_, err := fmt.Fprintf(w, "%v (%v)\n", line, filename)
 			if err != nil {
 				return fmt.Errorf("%w: %v", WriteErr, err)
@@ -112,6 +97,14 @@ func Buf_ReadFileMatch(w io.Writer, file fs.File, search_term string, ignoreCase
 
 func GetFileContent(w io.Writer, fs fs.FS, args []string, ignoreCase bool) error {
 	search_term := args[0]
+	if ignoreCase {
+		search_term = "(?i)" + search_term
+	}
+	re, err := regexp.Compile(search_term)
+
+	if err != nil {
+		return fmt.Errorf("%w: %v", RegExpErr, err)
+	}
 	file_args := args[1:]
 
 	for _, filename := range file_args {
@@ -131,7 +124,7 @@ func GetFileContent(w io.Writer, fs fs.FS, args []string, ignoreCase bool) error
 				return fmt.Errorf("%w", matchErr)
 			} */
 
-		matchErr := Buf_ReadFileMatch(w, file, search_term, ignoreCase)
+		matchErr := Buf_ReadFileMatch(w, file, re)
 		if matchErr != nil {
 			return fmt.Errorf("%w", matchErr)
 		}
