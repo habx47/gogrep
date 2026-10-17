@@ -79,13 +79,15 @@ func Buf_ReadFileMatch(w io.Writer, file fs.File, re *regexp.Regexp) error {
 		return fmt.Errorf("%v", err)
 	}
 
-	filename := file_info.Name()
+	filename := []byte(" (" + file_info.Name() + ")\n")
 
 	for scanner.Scan() {
-		line := scanner.Text()
-		if re.MatchString(line) {
-			_, err := fmt.Fprintf(w, "%v (%v)\n", line, filename)
-			if err != nil {
+		line := scanner.Bytes()
+		if re.Match(line) {
+			if _, err := w.Write(line); err != nil {
+				return fmt.Errorf("%w: %v", WriteErr, err)
+			}
+			if _, err := w.Write(filename); err != nil {
 				return fmt.Errorf("%w: %v", WriteErr, err)
 			}
 		}
