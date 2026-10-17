@@ -80,6 +80,25 @@ func TestGetFileContent(t *testing.T) {
 		}
 	})
 
+	t.Run("invalid regexp", func(t *testing.T) {
+		var buffer bytes.Buffer
+		invalid_pattern := "(invaid-regex"
+
+		fs := fstest.MapFS{
+			"test_one.txt": {Data: []byte("hello FrOm test_one\n")},
+		}
+
+		err := parser.GetFileContent(&buffer, fs, []string{invalid_pattern, "", ""}, false)
+
+		if err == nil {
+			t.Fatalf("expected err on invalid pattern: %v but got nil", invalid_pattern)
+		}
+
+		if !errors.Is(err, parser.RegExpErr) {
+			t.Errorf("got: %v want: %v", err, parser.RegExpErr)
+		}
+	})
+
 	t.Run("no error with no matches", func(t *testing.T) {
 		var buffer bytes.Buffer
 		fs := fstest.MapFS{
