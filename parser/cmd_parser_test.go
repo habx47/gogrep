@@ -26,7 +26,7 @@ func TestGetFileContent(t *testing.T) {
 			"test_one.txt": &fstest.MapFile{Data: []byte("hello from test_one\nhello again!\n")},
 			"test_two.txt": &fstest.MapFile{Data: []byte("hello from test_two\n")},
 		}
-		err := parser.GetFileContent(&buffer, fs, []string{"from", "test_one.txt", "test_two.txt"})
+		err := parser.GetFileContent(&buffer, fs, []string{"from", "test_one.txt", "test_two.txt"}, false)
 
 		got := buffer.String()
 		want := "hello from test_one (test_one.txt)\nhello from test_two (test_two.txt)\n"
@@ -40,13 +40,53 @@ func TestGetFileContent(t *testing.T) {
 		}
 	})
 
+	t.Run("ignoreCase: false", func(t *testing.T) {
+		var buffer bytes.Buffer
+		fs := fstest.MapFS{
+			"test_one.txt": {Data: []byte("hello from test_one\n")},
+			"test_two.txt": {Data: []byte("hello FROM test_one\n")},
+		}
+
+		err := parser.GetFileContent(&buffer, fs, []string{"from", "test_one.txt", "test_two.txt"}, false)
+		if err != nil {
+			t.Fatalf("expected no err but got %v", err)
+		}
+
+		got := buffer.String()
+		want := "hello from test_one (test_one.txt)\n"
+
+		if got != want {
+			t.Errorf("got: %v, want: %v", got, want)
+		}
+	})
+
+	t.Run("ignoreCase: true", func(t *testing.T) {
+		var buffer bytes.Buffer
+		fs := fstest.MapFS{
+			"test_one.txt": {Data: []byte("hello FrOm test_one\n")},
+			"test_two.txt": {Data: []byte("hello from test_two\n")},
+		}
+
+		err := parser.GetFileContent(&buffer, fs, []string{"FROm", "test_one.txt", "test_two.txt"}, true)
+		if err != nil {
+			t.Fatalf("expected no err but got %v", err)
+		}
+
+		got := buffer.String()
+		want := "hello FrOm test_one (test_one.txt)\nhello from test_two (test_two.txt)\n"
+
+		if got != want {
+			t.Errorf("got: %v, want: %v", got, want)
+		}
+	})
+
 	t.Run("no error with no matches", func(t *testing.T) {
 		var buffer bytes.Buffer
 		fs := fstest.MapFS{
 			"test_one.txt": &fstest.MapFile{Data: []byte("hello from test_one\n")},
 		}
 
-		err := parser.GetFileContent(&buffer, fs, []string{"missing", "test_one.txt"})
+		err := parser.GetFileContent(&buffer, fs, []string{"missing", "test_one.txt"}, false)
 		got := buffer.String()
 		want := ""
 
@@ -61,7 +101,7 @@ func TestGetFileContent(t *testing.T) {
 
 	t.Run("error on opening", func(t *testing.T) {
 		var buffer bytes.Buffer
-		err := parser.GetFileContent(&buffer, StubFailingFS{}, []string{"", "test.txt"})
+		err := parser.GetFileContent(&buffer, StubFailingFS{}, []string{"", "test.txt"}, false)
 
 		if !errors.Is(err, parser.OpenFileErr) {
 			t.Errorf("got %v, want %v", err, parser.OpenFileErr)
